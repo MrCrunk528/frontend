@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: "#141618";
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+@font-face {
+  font-family: "Euclid-Circular-Bold";
+  src: local("Euclid-Circular"),
+    url("./assets/fonts/euclid-circular-b/Euclid-Circular-B-Bold.ttf") format("opentype");
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: "Euclid-Circular-Semi-Bold";
+  src: local("Euclid-Circular"),
+    url("./assets/fonts/euclid-circular-b/Euclid-Circular-B-SemiBold.ttf") format("opentype");
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: "Euclid-Circular-Regular";
+  src: local("Euclid-Circular"),
+    url("./assets/fonts/euclid-circular-b/Euclid-Circular-B-Regular.ttf") format("opentype");
+  font-weight: normal;
+}
+
+h2.text-xl{
+  font-family: "Euclid-Circular-Bold";
+  font-size: 1.9rem !important;
+}
+
+h2.text-lg{
+  font-family: "Euclid-Circular-Bold";
+  font-size: 1.4rem !important;
+}
+
+nav{
+  width: 90%;
+}
+
+p{
+  font-size: 0.8rem;
+  font-family: "Euclid-Circular-Regular";
+  color:  white;
+}
+
+p.disclaimer{
+  font-size: 0.7rem;
+}
+
+p.top-recovery{
+  font-size: 0.6rem;
+}
+
+button{
+  font-size: 0.80rem !important;
+  font-family: "Euclid-Circular-Regular";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button.improve{
+  font-size: 0.80rem !important;
+  font-family: "Euclid-Circular-Regular";
+  width: 45%;
+}
+
+label{
+  font-size: 0.85rem !important;
+  font-family: "Euclid-Circular-Regular";
+}
+
+select{
+  font-size: 0.75rem !important;
+  font-family: "Euclid-Circular-Regular";
+}
+
+option {
+  font-size: 0.85rem;
+  font-family: "Euclid-Circular-Regular";
+  text-align: left; /* Ensures options are aligned left */
+  color: white; /* Optional: You can set a specific color for options */
+  padding: 0.5rem; /* Adds spacing for readability */
+}
+
+li{
+  color: white
+}
+
+span{
+  font-size: 0.75rem;
+  font-family: "Euclid-Circular-Regular";
+}
+
+/* styles.css */
+/* Custom Checkbox Styles */
+.custom-checkbox,
+.custom-checkbox-2 {
+  @apply appearance-none w-5 h-5 border border-gray-500 bg-transparent
+    cursor-pointer flex-shrink-0;
+  border-radius: 2px;
+}
+
+.custom-checkbox:checked,
+.custom-checkbox-2:checked {
+  background-color: rgb(67, 174, 252); /* The desired color when checked */
+  border-color: rgb(67, 174, 252);
+  color: black;
+}
+
+.custom-checkbox:checked::after,
+.custom-checkbox-2:checked::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="black"><path d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" /></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Example usage of your progressbar classes */
+.two-steps {
+  margin: 0 auto;
+}
+
+/* These can override Tailwind if needed, or coexist */
+.progressbar {
+  counter-reset: step;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+  padding: 0;            /* ensure no default ul padding */
+  width: 100%;
+}
+
+.progressbar li {
+  font-size: 0.75rem;
+  font-family: "Euclid Circular B", Helvetica, Arial, sans-serif;
+  line-height: 140%;
+  font-style: normal;
+  font-weight: normal;
+  list-style-type: none;
+  position: relative;
+  text-align: center;
+  color: var(--color-text-alternative, #999);
+  z-index: 2;
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* Mark active step in your brand's color */
+.progressbar li.active {
+  color: var(--color-primary-default, rgb(67,174,252));
+}
+
+/* Optionally if you want lines behind steps, you can use ::before or ::after, etc. */
+
+button.create-button{
+  width: 75%;
+}
+
+.bg-custom{
+  background-color: rgb(67,174,252);
+  height: 0.1rem !important;
+}
